@@ -28,9 +28,7 @@ Dim oSefaz As New SefazClass
 
 Private Sub Command1_Click()
    
-   oSefaz.cChave = "351610xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-   oSefaz.cCertificado = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
-   oSefaz.nfeConsultaProtocolo
+   oSefaz.nfeConsultaProtocolo "351610xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "nomecertificado", "1"
    ShowXml oSefaz.cXmlDados
    ShowXml oSefaz.cXmlEnvelope
    ShowXml oSefaz.cXmlRetorno

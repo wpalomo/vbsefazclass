@@ -13,7 +13,8 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-Const WS_CTE_CONSULTAPROTOCOLO = 2
+Const WS_NFE_CONSULTAPROTOCOLO = 12
+
 Const WS_AMBIENTE_HOMOLOGACAO = "2"
 Const WS_AMBIENTE_PRODUCAO = "1"
 
@@ -24,7 +25,7 @@ Const WS_PROJETO_MDFE = "mdfe"
 Public cChave As String
 Public cCertificado As String
 Public cSoapAction As String
-Public cUrlWs As String
+Public cSoapWs As String
 Public cServico As String
 Public cXmlDados As String
 Public cXmlEnvelope As String
@@ -34,16 +35,21 @@ Public cUF As String
 Public cVersao As String
 
 Private Sub Class_initialize()
-   cUF = "35"
+   
+   cUF = "SP"
    cVersao = "3.10"
+   cAmbiente = WS_AMBIENTE_PRODUCAO
+
 End Sub
 
-Function nfeConsultaProtocolo()
+Function nfeConsultaProtocolo(xChave, Optional xCertificado As String, Optional xAmbiente As String)
 
+   If Not IsMissing(xAmbiente) Then cAmbiente = xAmbiente
+   If Not IsMissing(xCertificado) Then cCertificado = xCertificado
+   cUF = UFSigla(Mid(xChave, 1, 2))
    cServico = "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
-   cUrlWs = "https://nfe.fazenda.sp.gov.br/ws/nfeconsulta2.asmx"
    cSoapAction = "NfeConsulta2"
-   cAmbiente = "1"
+   SetSoapWs WS_NFE_CONSULTAPROTOCOLO
    cXmlDados = "<consSitNFe versao='" & cVersao & "' xmlns='http://www.portalfiscal.inf.br/nfe'>" & _
      XmlTag("tpAmb", cAmbiente) & _
      XmlTag("xServ", "CONSULTAR") & _
@@ -63,7 +69,7 @@ Function XmlSoapEnvelope()
       " xmlns:soap12='http://www.w3.org/2003/05/soap-envelope'>" & _
       "<soap12:Header>" & _
       "<nfeCabecMsg xmlns='" & cServico & "'>" & _
-      XmlTag("cUF", cUF) & _
+      XmlTag("cUF", UFCodigo(cUF)) & _
       XmlTag("versaoDados", cVersao) & _
       "</nfeCabecMsg>" & _
       "</soap12:Header>" & _
@@ -74,6 +80,7 @@ Function XmlSoapEnvelope()
       "</soap12:Body>" & _
       "</soap12:Envelope>"
    cXmlEnvelope = Replace(cXmlEnvelope, "'", Chr(34))
+
 End Function
 
 Function MicrosoftXmlSoapPost()
@@ -82,7 +89,7 @@ Function MicrosoftXmlSoapPost()
 
    Set oServer = CreateObject("MSXML2.ServerXMLHTTP")
    oServer.setOption 3, "CURRENT_USER\MY\" & cCertificado
-   oServer.open "POST", cUrlWs, False
+   oServer.open "POST", cSoapWs, False
    oServer.setrequestheader "SOAPAction", cSoapAction
    oServer.setrequestheader "Content-Type", "application/soap+xml;charset=utf-8"
    oServer.send cXmlEnvelope
@@ -95,10 +102,36 @@ Function MicrosoftXmlSoapPost()
 
 End Function
 
+Function SetSoapWs(nWsServico As Integer)
 
-Function XmlTag(cTag, cValue)
+   Select Case cUF
+      Case "SP"
+         Select Case cAmbiente
+         Case WS_AMBIENTE_PRODUCAO
+            If WS_NFE_CONSULTAPROTOCOLO Then cSoapWs = "https://nfe.fazenda.sp.gov.br/ws/nfeconsulta2.asmx"
+         End Select
+   End Select
+End Function
+
+
+Function XmlTag(cTag As String, cValue As String)
 
    XmlTag = "<" & cTag & ">" & cValue & "</" & cTag & ">"
 
 End Function
 
+Function UFCodigo(cUF As String)
+   
+   Select Case cUF
+   Case "SP": UFCodigo = "35"
+   End Select
+
+End Function
+
+Function UFSigla(cUF As String)
+   
+   Select Case cUF
+   Case "35": UFSigla = "SP"
+   End Select
+
+End Function

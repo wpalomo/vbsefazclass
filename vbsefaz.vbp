@@ -5,7 +5,6 @@ Class=SefazClass; SefazClass.cls
 IconForm="Test"
 Startup="Test"
 ExeName32="Project1.exe"
-Path32="..\..\..\temp\vbnfe"
 Command32=""
 Name="Project1"
 HelpContextID="0"
