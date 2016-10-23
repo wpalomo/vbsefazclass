@@ -40,8 +40,6 @@ End Sub
 
 Function nfeConsultaProtocolo()
 
-   Dim bRetorno() As Byte
-
    cServico = "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
    cUrlWs = "https://nfe.fazenda.sp.gov.br/ws/nfeconsulta2.asmx"
    cSoapAction = "NfeConsulta2"
