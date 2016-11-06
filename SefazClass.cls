@@ -11,9 +11,39 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+
 Option Explicit
 
+Const WS_CTE_CONSULTACADASTRO = 1
+Const WS_CTE_CONSULTAPROTOCOLO = 2
+Const WS_CTE_INUTILIZACAO = 3
+Const WS_CTE_RECEPCAO = 4
+Const WS_CTE_RECEPCAOEVENTO = 5
+Const WS_CTE_RETRECEPCAO = 6
+Const WS_CTE_STATUSSERVICO = 7
+
+Const WS_NFE_AUTORIZACAO = 8
+Const WS_NFE_RETAUTORIZACAO = 9
+Const WS_NFE_CANCELAMENTO = 10
+Const WS_NFE_CONSULTACADASTRO = 11
 Const WS_NFE_CONSULTAPROTOCOLO = 12
+Const WS_NFE_INUTILIZACAO = 13
+Const WS_NFE_RECEPCAO = 14
+Const WS_NFE_RECEPCAOEVENTO = 15
+Const WS_NFE_RETRECEPCAO = 16
+Const WS_NFE_STATUSSERVICO = 17
+
+Const WS_MDFE_RECEPCAO = 18
+Const WS_MDFE_RETRECEPCAO = 19
+Const WS_MDFE_RECEPCAOEVENTO = 20
+Const WS_MDFE_CONSULTA = 21
+Const WS_MDFE_STATUSSERVICO = 22
+Const WS_MDFE_CONSNAOENC = 23
+
+Const WS_NFE_DISTRIBUICAODFE = 24
+Const WS_MDFE_DISTRIBUICAODFE = 25
+Const WS_NFE_DOWNLOADNF = 26
+Const WS_NFE_CONSULTADEST = 27
 
 Const WS_AMBIENTE_HOMOLOGACAO = "2"
 Const WS_AMBIENTE_PRODUCAO = "1"
@@ -22,65 +52,262 @@ Const WS_PROJETO_NFE = "nfe"
 Const WS_PROJETO_CTE = "cte"
 Const WS_PROJETO_MDFE = "mdfe"
 
-Public cChave As String
-Public cCertificado As String
-Public cSoapAction As String
-Public cSoapWs As String
-Public cServico As String
-Public cXmlDados As String
-Public cXmlEnvelope As String
-Public cXmlRetorno As String
-Public cAmbiente As String
-Public cUF As String
-Public cVersao As String
+Const INDSINC_RETORNA_PROTOCOLO = "1"
+Const INDSINC_RETORNA_RECIBO = "0"
+
+' configuração
+Public cProjeto       As String
+Public cAmbiente      As String
+Public cVersao        As String
+Public cScan          As String
+Public cUF            As String
+Public cCertificado   As String
+Public cIndSinc       As String
+Public nTempoEspera   As Integer
+Public cUFTimeZone    As String
+' xmls de cada etapa
+Public cXmlDocumento  As String
+Public cXmlEnvio      As String
+Public cXmlSoap       As String
+Public cXmlRetorno    As String
+Public cXmlRecibo     As String
+Public cXmlProtocolo  As String
+Public cXmlAutorizado As String
+Public cStatus        As String
+Public cRecibo        As String
+Public cMotivo        As String
+' uso interno
+Public cVersaoXml     As String
+Public cSoapService   As String
+Public cSoapAction    As String
+Public cSoapURL       As String
 
 Private Sub Class_initialize()
-   
-   cUF = "SP"
-   cVersao = "3.10"
+
+   cProjeto = WS_PROJETO_NFE
    cAmbiente = WS_AMBIENTE_PRODUCAO
+   cVersao = "3.10"
+   cScan = "N"
+   cUF = "SP"
+   cIndSinc = INDSINC_RETORNA_RECIBO
+   nTempoEspera = 7
+   cUFTimeZone = "SP"
+   cXmlRetorno = "Erro Desconhecido"
 
 End Sub
 
-Function nfeConsultaProtocolo(xChave, Optional xCertificado As String, Optional xAmbiente As String)
+Function SetAmbiente(xAmbiente As String)
 
-   If Not IsMissing(xAmbiente) Then cAmbiente = xAmbiente
-   If Not IsMissing(xCertificado) Then cCertificado = xCertificado
-   cUF = UFSigla(Mid(xChave, 1, 2))
-   cServico = "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
-   cSoapAction = "NfeConsulta2"
-   SetSoapWs WS_NFE_CONSULTAPROTOCOLO
-   cXmlDados = "<consSitNFe versao='" & cVersao & "' xmlns='http://www.portalfiscal.inf.br/nfe'>" & _
+   If Not IsMissing(xAmbiente) Then
+      If Len(Trim(xAmbiente)) <> 0 Then
+         cAmbiente = xAmbiente
+      End If
+   End If
+End Function
+
+Function SetCertificado(xCertificado As String)
+
+   If Not IsMissing(xCertificado) Then
+      If Len(Trim(xCertificado)) <> 0 Then
+         cCertificado = xCertificado
+      End If
+   End If
+End Function
+
+Function SetProjeto(xProjeto As String)
+
+   If Not IsMissing(xProjeto) Then
+      If Len(Trim(xProjeto)) <> 0 Then
+         cProjeto = xProjeto
+      End If
+   End If
+End Function
+
+Function Setuf(xUF As String)
+
+   If Not IsMissing(xUF) Then
+      If Len(Trim(xUF)) <> 0 Then
+         cUF = xUF
+      End If
+   End If
+End Function
+
+Function SetSoapService(xSoapService As String)
+   If Not IsMissing(xSoapService) Then
+    If Len(Trim(xSoapService)) <> 0 Then
+       cSoapService = xSoapService
+   End If
+End If
+End Function
+
+Function SetSoapAction(xSoapAction As String)
+   If Not IsMissing(xSoapAction) Then
+      If Len(Trim(xSoapAction)) <> 0 Then
+         cSoapAction = xSoapAction
+        End If
+    End If
+End Function
+
+Function CTeConsultaProtocolo(xChave As String, Optional xCertificado As String, Optional xAmbiente As String)
+
+   SetAmbiente (xAmbiente)
+   SetCertificado (xCertificado)
+   SetProjeto (WS_PROJETO_CTE)
+   Setuf (UFSigla(Mid(xChave, 1, 2)))
+
+   SetSoapAction ("cteConsultaCT")
+   SetSoapService ("http://www.portalfiscal.inf.br/cte/wsdl/CteConsulta")
+   SetSoapURL (WS_CTE_CONSULTAPROTOCOLO)
+
+   cVersaoXml = "2.00"
+   cXmlEnvio = "<consSitCTe versao='" & cVersaoXml & " xmlns='http://www.portalfiscal.inf.br/cte'>" & _
+                  XmlTag("tpAmb", cAmbiente) & _
+                  XmlTag("xServ", "CONSULTAR") & _
+                  XmlTag("chCTe", xChave) & _
+                  "</consSitCTe>"
+   cXmlEnvio = Replace(cXmlEnvio, "'", Chr(34))
+   If Mid(xChave, 21, 2) <> "57" Then
+      cXmlRetorno = "*ERRO* Chave não se refere a CTE"
+   Else
+      XmlSoapPost
+   End If
+   CTeConsultaProtocolo = cXmlRetorno
+End Function
+
+Function CTeConsultaRecibo(Optional xRecibo As String, Optional xUF As String, Optional xCertificado As String, Optional xAmbiente As String)
+
+   If Not IsMissing(xRecibo) Then cRecibo = xRecibo
+
+   SetAmbiente xAmbiente
+   SetCertificado xCertificado
+   SetProjeto WS_PROJETO_CTE
+   Setuf cUF
+
+   SetSoapAction "cteRetRecepcao"
+   SetSoapService "http://www.portalfiscal.inf.br/cte/wsdl/CteRetRecepcao"
+   SetSoapURL WS_CTE_RETRECEPCAO
+
+   cVersaoXml = "2.00"
+   cXmlEnvio = "<consReciCTe versao='" & cVersaoXml & "' xmlns='http://www.portalfiscal.inf.br/cte'>" & _
+      XmlTag("tpAmb", cAmbiente) & _
+      XmlTag("nRec", cRecibo) & _
+      "</consReciCTe>"
+   cXmlEnvio = Replace(cXmlEnvio, "'", Chr(34))
+   XmlSoapPost
+   cXmlProtocolo = cXmlRetorno
+   cMotivo = xmlnode(xmlnode(cXmlRetorno, "infProt"), "xMotivo")
+   CTeConsultaRecibo = cXmlRetorno
+End Function
+
+Function CTeEventoCancela(xChave As String, xSequencia As Integer, xProt As String, xJust As String, Optional xCertificado As String, Optional xAmbiente As String)
+
+   SetAmbiente xAmbiente
+   SetCertificado xCertificado
+   SetProjeto WS_PROJETO_CTE
+   Setuf UFSigla(Mid(xChave, 1, 2))
+
+   SetSoapAction "cteRecepcaoEvento"
+   SetSoapService "http://www.portalfiscal.inf.br/cte/wsdl/CteRecepcaoEvento"
+   SetSoapURL WS_CTE_RECEPCAOEVENTO
+
+   cXmlDocumento = "<eventoCTe xmlns='http://www.portalfiscal.inf.br/cte' versao='2.00'>]" & _
+      "<infEvento Id='ID110111" + xChave + StrZero(xSequencia, 2) + "'>" & _
+      XmlTag("cOrgao", Mid(xChave, 1, 2)) & _
+      XmlTag("tpAmb", cAmbiente) & _
+      XmlTag("CNPJ", Mid(xChave, 7, 14)) & _
+      XmlTag("chCTe", xChave) & _
+      XmlTag("dhEvento", DateTimeXml(, , False)) & _
+      XmlTag("tpEvento", "110111") & _
+      XmlTag("nSeqEvento", LTrim(Str(xSequencia))) & _
+      "<detEvento versaoEvento='2.00'>" & _
+      "<evCancCTe>" & _
+      XmlTag("descEvento", "Cancelamento") & _
+      XmlTag("nProt", xProt) & _
+      XmlTag("xJust", xJust) & _
+      "</evCancCTe>" & _
+      "</detEvento>" & _
+      "</infEvento>" & _
+      "</eventoCTe>"
+   cXmlDocumento = Replace(cXmlDocumento, "'", Chr(34))
+   If assinaxml() = "OK" Then
+      cXmlEnvio = cXmlDocumento
+      XmlSoapPost
+      cXmlProtocolo = cXmlRetorno
+      CTEGeraAutorizado cXmlDocumento, cXmlProtocolo
+   End If
+   CTeEventoCancela = cXmlRetorno
+End Function
+
+Function NFeConsultaProtocolo(xChave As String, Optional xCertificado As String, Optional xAmbiente As String)
+
+   SetAmbiente xAmbiente
+   SetCertificado xCertificado
+   SetProjeto WS_PROJETO_NFE
+   Setuf UFSigla(Mid(xChave, 1, 2))
+
+   SetSoapURL WS_NFE_CONSULTAPROTOCOLO
+   If cUF = "BA" Then
+      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta"
+      SetSoapAction "nfeConsultaNF"
+   ElseIf InStr("AC,AL,AP,DF,ES,PB,RJ,RN,RO,RR,SC,SE,TO", cUF) <> 0 Then
+      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
+      SetSoapAction "nfeConsultaNF2"
+   Else
+      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
+      SetSoapAction "NfeConsulta2"
+   End If
+   
+   cXmlEnvio = "<consSitNFe versao='" & cVersao & "' xmlns='http://www.portalfiscal.inf.br/nfe'>" & _
      XmlTag("tpAmb", cAmbiente) & _
      XmlTag("xServ", "CONSULTAR") & _
-     XmlTag("chNFe", cChave) & _
+     XmlTag("chNFe", xChave) & _
      "</consSitNFe>"
-   XmlSoapEnvelope
-   MicrosoftXmlSoapPost
+   If InStr("55,65", Mid(xChave, 21, 2)) = 0 Then
+      cXmlRetorno = "*ERRO* Chave não se refere a NFE"
+   Else
+      XmlSoapPost
+   End If
+   NFeConsultaProtocolo = cXmlRetorno
 
 End Function
 
+Function XmlSoapPost()
+
+   If Len(cSoapURL) = 0 Then
+      cXmlRetorno = "Erro SOAP: Não há endereço de webservice"
+      Exit Function
+   ElseIf Len(cSoapService) = 0 Then
+      cXmlRetorno = "Erro SOAP: Não há nome de serviço"
+      Exit Function
+   ElseIf Len(cSoapAction) = 0 Then
+      cXmlRetorno = "Erro SOAP: Não há endereço de SOAP Action"
+      Exit Function
+    End If
+    XmlSoapEnvelope
+    MicrosoftXmlSoapPost
+
+End Function
 
 Function XmlSoapEnvelope()
 
-   cXmlEnvelope = "<?xml version='1.0' encoding='UTF-8'?>" & _
+   cXmlSoap = "<?xml version='1.0' encoding='UTF-8'?>" & _
       "<soap12:Envelope xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance'" & _
       " xmlns:xsd='http:/www.w3.org/2001/XMLSchema'" & _
       " xmlns:soap12='http://www.w3.org/2003/05/soap-envelope'>" & _
       "<soap12:Header>" & _
-      "<nfeCabecMsg xmlns='" & cServico & "'>" & _
+      "<nfeCabecMsg xmlns='" & cSoapService & "'>" & _
       XmlTag("cUF", UFCodigo(cUF)) & _
       XmlTag("versaoDados", cVersao) & _
       "</nfeCabecMsg>" & _
       "</soap12:Header>" & _
       "<soap12:Body>" & _
-      "<nfeDadosMsg xmlns='" & cServico & "'>" & _
-      cXmlDados & _
+      "<nfeDadosMsg xmlns='" & cSoapService & "'>" & _
+      cXmlEnvio & _
       "</nfeDadosMsg>" & _
       "</soap12:Body>" & _
       "</soap12:Envelope>"
-   cXmlEnvelope = Replace(cXmlEnvelope, "'", Chr(34))
-
+   cXmlSoap = Replace(cXmlSoap, "'", Chr(34))
+   XmlSoapEnvelope = cXmlSoap
 End Function
 
 Function MicrosoftXmlSoapPost()
@@ -89,10 +316,10 @@ Function MicrosoftXmlSoapPost()
 
    Set oServer = CreateObject("MSXML2.ServerXMLHTTP")
    oServer.setOption 3, "CURRENT_USER\MY\" & cCertificado
-   oServer.open "POST", cSoapWs, False
+   oServer.open "POST", cSoapURL, False
    oServer.setrequestheader "SOAPAction", cSoapAction
    oServer.setrequestheader "Content-Type", "application/soap+xml;charset=utf-8"
-   oServer.send cXmlEnvelope
+   oServer.send cXmlSoap
    oServer.waitforresponse 500
    bRetorno = oServer.responsebody
    cXmlRetorno = ""
@@ -102,16 +329,6 @@ Function MicrosoftXmlSoapPost()
 
 End Function
 
-Function SetSoapWs(nWsServico As Integer)
-
-   Select Case cUF
-      Case "SP"
-         Select Case cAmbiente
-         Case WS_AMBIENTE_PRODUCAO
-            If WS_NFE_CONSULTAPROTOCOLO Then cSoapWs = "https://nfe.fazenda.sp.gov.br/ws/nfeconsulta2.asmx"
-         End Select
-   End Select
-End Function
 
 
 Function XmlTag(cTag As String, cValue As String)
@@ -121,17 +338,90 @@ Function XmlTag(cTag As String, cValue As String)
 End Function
 
 Function UFCodigo(cUF As String)
-   
-   Select Case cUF
-   Case "SP": UFCodigo = "35"
-   End Select
+
+   Dim cUFs As String, nPosicao As Integer
+   cUFs = "AC,12,AL,27,AM,13,AP,16,BA,29,CE,23,DF,53,ES,32,GO,52,MG,31,MS,50,MT,51,MA,21,PA,15,PB,25,PE,26,PI,22,PR,41,RJ,33,RO,11,RN,24,RR,14,RS,43,SC,42,SE,28,SP,35,TO,17,"
+   nPosicao = InStr(cUFs, cUF)
+   If nPosicao < 1 Then
+      UFCodigo = "99"
+   Else
+      UFCodigo = Mid(cUFs, nPosicao + 3, 2)
+   End If
 
 End Function
 
 Function UFSigla(cUF As String)
-   
+
+   Dim cUFs As String, nPosicao As Integer
+
+   cUFs = "AC,12,AL,27,AM,13,AP,16,BA,29,CE,23,DF,53,ES,32,GO,52,MG,31,MS,50,MT,51,MA,21,PA,15,PB,25,PE,26,PI,22,PR,41,RJ,33,RO,11,RN,24,RR,14,RS,43,SC,42,SE,28,SP,35,TO,17,"
+   nPosicao = InStr(cUFs, cUF)
+   If nPosicao < 1 Then
+      UFSigla = "XX"
+   Else
+      UFSigla = Mid(cUFs, nPosicao - 3, 2)
+   End If
+
+End Function
+
+Function SetSoapURL(nWsServico As Integer)
+
+   If cProjeto = WS_PROJETO_NFE Then
+      cSoapURL = UrlWebService(cUF, cAmbiente, nWsServico, cVersao)
+   End If
+   If Len(cSoapURL) = 0 Then
+      If cProjeto = WS_PROJETO_NFE Then
+         If InStr("AC,AL,AP,DF,ES,PB,RJ,RN,RO,RR,SC,SE,TO", cUF) = 0 Then
+            cSoapURL = UrlWebService("SVRS", cAmbiente, nWsServico, cVersao)
+         ElseIf InStr("MA,PA,PI", cUF) = 0 Then
+            cSoapURL = UrlWebService("SVAN", cAmbiente, nWsServico, cVersao)
+         End If
+         If Len(cSoapURL) = 0 Then
+            cSoapURL = UrlWebService("AN", cAmbiente, nWsServico, cVersao)
+         End If
+      End If
+    End If
+
+End Function
+
+Function UrlWebService(cUF As String, cAmbiente As String, nWsServico As Integer, cVersao As String)
+
    Select Case cUF
-   Case "35": UFSigla = "SP"
+   Case "AC"
+      UrlWebService = UrlWebService("SVRS", cAmbiente, nWsServico, cVersao)
+   Case "AM"
+      Select Case cAmbiente
+      Case WS_AMBIENTE_PRODUCAO
+         If WS_NFE_CONSULTAPROTOCOLO Then UrlWebService = "https://nfe.sefaz.am.gov.br/services2/services/NfeConsulta2"
+      End Select
+   Case "SP"
+      Select Case cAmbiente
+      Case WS_AMBIENTE_PRODUCAO
+         If WS_NFE_CONSULTAPROTOCOLO Then UrlWebService = "https://nfe.fazenda.sp.gov.br/ws/nfeconsulta2.asmx"
+      End Select
    End Select
+End Function
+
+Function xmlnode(cXml As String, cNode As String) As String
+' apenas pra não dar erro por faltar a função
+End Function
+
+Function StrZero(nValue As Integer, nLen As Integer)
+   StrZero = Format(nValue, String("0", nLen))
+End Function
+
+Function DateTimeXml(Optional dDate As Date, Optional cTime As String, Optional cUF As String, Optional lUTC As Boolean)
+If IsMissing(dDate) Then dDate = Now()
+If IsMissing(cTime) Then cTime = Time()
+If IsMissing(cUF) Then cUF = "SP"
+If IsMissing(lUTC) Then lUTC = True
+DateTimeXml = Format(Year(dDate), "0000") & "-" & Format(Month(dDate), "00") & "-" & Format(Day(dDate), "00") & "T" & Time() & "-02"
+End Function
+
+Function assinaxml()
+  ' vai assinar cXmlDocumento usando cCertificado
+End Function
+
+Function CTEGeraAutorizado(cXmlDocumento, cXmlProtocolo)
 
 End Function

@@ -24,13 +24,14 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
-Dim oSefaz As New SefazClass
 
 Private Sub Command1_Click()
    
-   oSefaz.nfeConsultaProtocolo "351610xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "nomecertificado", "1"
-   ShowXml oSefaz.cXmlDados
-   ShowXml oSefaz.cXmlEnvelope
+   Dim oSefaz As New SefazClass
+   
+   oSefaz.NFeConsultaProtocolo "351610xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "nomecertificado", "1"
+   ShowXml oSefaz.cXmlEnvio
+   ShowXml oSefaz.cXmlSoap
    ShowXml oSefaz.cXmlRetorno
 
 End Sub
