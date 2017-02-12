@@ -1,21 +1,53 @@
 VERSION 5.00
 Begin VB.Form Test 
    Caption         =   "Test"
-   ClientHeight    =   1470
+   ClientHeight    =   3750
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   6795
    LinkTopic       =   "Form1"
-   ScaleHeight     =   1470
+   ScaleHeight     =   3750
    ScaleWidth      =   6795
    StartUpPosition =   3  'Windows Default
-   Begin VB.CommandButton Command1 
-      Caption         =   "cmdConsulta"
+   Begin VB.TextBox Text2 
       Height          =   495
-      Left            =   480
+      Left            =   360
+      TabIndex        =   2
+      Text            =   "Nome certificado"
+      Top             =   1920
+      Width           =   3615
+   End
+   Begin VB.TextBox Text1 
+      Height          =   495
+      Left            =   240
+      TabIndex        =   1
+      Text            =   "35170100000000000000000000000000000000000000"
+      Top             =   840
+      Width           =   5655
+   End
+   Begin VB.CommandButton Command1 
+      Caption         =   "Consulta na Sefaz"
+      Height          =   495
+      Left            =   360
       TabIndex        =   0
-      Top             =   360
+      Top             =   3000
       Width           =   4455
+   End
+   Begin VB.Label Label2 
+      Caption         =   "CN do Certificado"
+      Height          =   255
+      Left            =   360
+      TabIndex        =   4
+      Top             =   1560
+      Width           =   2175
+   End
+   Begin VB.Label Label1 
+      Caption         =   "Chave da Nota Fiscal Eletrônica"
+      Height          =   375
+      Left            =   360
+      TabIndex        =   3
+      Top             =   480
+      Width           =   3255
    End
 End
 Attribute VB_Name = "Test"
@@ -29,7 +61,7 @@ Private Sub Command1_Click()
    
    Dim oSefaz As New SefazClass
    
-   oSefaz.NFeConsultaProtocolo "351610xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "nomecertificado", "1"
+   oSefaz.NFeConsultaProtocolo Text1.Text, "nomecertificado", "1"
    ShowXml oSefaz.cXmlEnvio
    ShowXml oSefaz.cXmlSoap
    ShowXml oSefaz.cXmlRetorno

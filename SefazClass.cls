@@ -56,31 +56,31 @@ Const INDSINC_RETORNA_PROTOCOLO = "1"
 Const INDSINC_RETORNA_RECIBO = "0"
 
 ' configuração
-Public cProjeto       As String
-Public cAmbiente      As String
-Public cVersao        As String
-Public cScan          As String
-Public cUF            As String
-Public cCertificado   As String
-Public cIndSinc       As String
-Public nTempoEspera   As Integer
-Public cUFTimeZone    As String
+Public cProjeto        As String
+Public cAmbiente       As String
+Public cVersao         As String
+Public cScan           As String
+Public cUF             As String
+Public cCertificado    As String
+Public cIndSinc        As String
+Public nTempoEspera    As Integer
+Public cUFTimeZone     As String
 ' xmls de cada etapa
-Public cXmlDocumento  As String
-Public cXmlEnvio      As String
-Public cXmlSoap       As String
-Public cXmlRetorno    As String
-Public cXmlRecibo     As String
-Public cXmlProtocolo  As String
+Public cXmlDocumento   As String
+Public cXmlEnvio       As String
+Public cXmlSoap        As String
+Public cXmlRetorno     As String
+Public cXmlRecibo      As String
+Public cXmlProtocolo   As String
 Public cXmlAutorizado As String
-Public cStatus        As String
-Public cRecibo        As String
-Public cMotivo        As String
+Public cStatus         As String
+Public cRecibo         As String
+Public cMotivo         As String
 ' uso interno
-Public cVersaoXml     As String
-Public cSoapService   As String
-Public cSoapAction    As String
-Public cSoapURL       As String
+Public cVersaoXml      As String
+Public cSoapService    As String
+Public cSoapAction     As String
+Public cSoapURL        As String
 
 Private Sub Class_initialize()
 
@@ -94,78 +94,18 @@ Private Sub Class_initialize()
    cUFTimeZone = "SP"
    cXmlRetorno = "Erro Desconhecido"
 
-End Sub
-
-Function SetAmbiente(xAmbiente As String)
-
-   If Not IsMissing(xAmbiente) Then
-      If Len(Trim(xAmbiente)) <> 0 Then
-         cAmbiente = xAmbiente
-      End If
-   End If
-End Function
-
-Function SetCertificado(xCertificado As String)
-
-   If Not IsMissing(xCertificado) Then
-      If Len(Trim(xCertificado)) <> 0 Then
-         cCertificado = xCertificado
-      End If
-   End If
-End Function
-
-Function SetProjeto(xProjeto As String)
-
-   If Not IsMissing(xProjeto) Then
-      If Len(Trim(xProjeto)) <> 0 Then
-         cProjeto = xProjeto
-      End If
-   End If
-End Function
-
-Function Setuf(xUF As String)
-
-   If Not IsMissing(xUF) Then
-      If Len(Trim(xUF)) <> 0 Then
-         cUF = xUF
-      End If
-   End If
-End Function
-
-Function SetSoapService(xSoapService As String)
-   If Not IsMissing(xSoapService) Then
-    If Len(Trim(xSoapService)) <> 0 Then
-       cSoapService = xSoapService
-   End If
-End If
-End Function
-
-Function SetSoapAction(xSoapAction As String)
-   If Not IsMissing(xSoapAction) Then
-      If Len(Trim(xSoapAction)) <> 0 Then
-         cSoapAction = xSoapAction
-        End If
-    End If
-End Function
+   End Sub
 
 Function CTeConsultaProtocolo(xChave As String, Optional xCertificado As String, Optional xAmbiente As String)
 
-   SetAmbiente (xAmbiente)
-   SetCertificado (xCertificado)
-   SetProjeto (WS_PROJETO_CTE)
-   Setuf (UFSigla(Mid(xChave, 1, 2)))
-
-   SetSoapAction ("cteConsultaCT")
-   SetSoapService ("http://www.portalfiscal.inf.br/cte/wsdl/CteConsulta")
-   SetSoapURL (WS_CTE_CONSULTAPROTOCOLO)
+   Setup UFSigla(Mid(xChave, 1, 2)), xCertificado, xAmbiente, WS_CTE_CONSULTAPROTOCOLO
 
    cVersaoXml = "2.00"
-   cXmlEnvio = "<consSitCTe versao='" & cVersaoXml & " xmlns='http://www.portalfiscal.inf.br/cte'>" & _
+   cXmlEnvio = "<consSitCTe versao=" & Quoted2(cVersaoXml) & " xmlns=" & Quoted2("http://www.portalfiscal.inf.br/cte") & ">" & _
                   XmlTag("tpAmb", cAmbiente) & _
                   XmlTag("xServ", "CONSULTAR") & _
                   XmlTag("chCTe", xChave) & _
                   "</consSitCTe>"
-   cXmlEnvio = Replace(cXmlEnvio, "'", Chr(34))
    If Mid(xChave, 21, 2) <> "57" Then
       cXmlRetorno = "*ERRO* Chave não se refere a CTE"
    Else
@@ -178,21 +118,13 @@ Function CTeConsultaRecibo(Optional xRecibo As String, Optional xUF As String, O
 
    If Not IsMissing(xRecibo) Then cRecibo = xRecibo
 
-   SetAmbiente xAmbiente
-   SetCertificado xCertificado
-   SetProjeto WS_PROJETO_CTE
-   Setuf cUF
-
-   SetSoapAction "cteRetRecepcao"
-   SetSoapService "http://www.portalfiscal.inf.br/cte/wsdl/CteRetRecepcao"
-   SetSoapURL WS_CTE_RETRECEPCAO
+   Setup xUF, xCertificado, xAmbiente, WS_CTE_RETRECEPCAO
 
    cVersaoXml = "2.00"
-   cXmlEnvio = "<consReciCTe versao='" & cVersaoXml & "' xmlns='http://www.portalfiscal.inf.br/cte'>" & _
+   cXmlEnvio = "<consReciCTe versao=" & Quoted2(cVersaoXml) & " xmlns=" & Quoted2("http://www.portalfiscal.inf.br/cte") & ">" & _
       XmlTag("tpAmb", cAmbiente) & _
       XmlTag("nRec", cRecibo) & _
       "</consReciCTe>"
-   cXmlEnvio = Replace(cXmlEnvio, "'", Chr(34))
    XmlSoapPost
    cXmlProtocolo = cXmlRetorno
    cMotivo = xmlnode(xmlnode(cXmlRetorno, "infProt"), "xMotivo")
@@ -201,17 +133,10 @@ End Function
 
 Function CTeEventoCancela(xChave As String, xSequencia As Integer, xProt As String, xJust As String, Optional xCertificado As String, Optional xAmbiente As String)
 
-   SetAmbiente xAmbiente
-   SetCertificado xCertificado
-   SetProjeto WS_PROJETO_CTE
-   Setuf UFSigla(Mid(xChave, 1, 2))
+   Setup UFSigla(Mid(xChave, 1, 2)), xCertificado, xAmbiente, WS_CTE_RECEPCAOEVENTO
 
-   SetSoapAction "cteRecepcaoEvento"
-   SetSoapService "http://www.portalfiscal.inf.br/cte/wsdl/CteRecepcaoEvento"
-   SetSoapURL WS_CTE_RECEPCAOEVENTO
-
-   cXmlDocumento = "<eventoCTe xmlns='http://www.portalfiscal.inf.br/cte' versao='2.00'>]" & _
-      "<infEvento Id='ID110111" + xChave + StrZero(xSequencia, 2) + "'>" & _
+   cXmlDocumento = "<eventoCTe xmlns=" & Quoted2("http://www.portalfiscal.inf.br/cte") & " versao=" & Quoted2("2.00") & ">" & _
+      "<infEvento Id=" & Quoted2("ID110111" & xChave & StrZero(xSequencia, 2)) & ">" & _
       XmlTag("cOrgao", Mid(xChave, 1, 2)) & _
       XmlTag("tpAmb", cAmbiente) & _
       XmlTag("CNPJ", Mid(xChave, 7, 14)) & _
@@ -228,7 +153,6 @@ Function CTeEventoCancela(xChave As String, xSequencia As Integer, xProt As Stri
       "</detEvento>" & _
       "</infEvento>" & _
       "</eventoCTe>"
-   cXmlDocumento = Replace(cXmlDocumento, "'", Chr(34))
    If assinaxml() = "OK" Then
       cXmlEnvio = cXmlDocumento
       XmlSoapPost
@@ -240,24 +164,9 @@ End Function
 
 Function NFeConsultaProtocolo(xChave As String, Optional xCertificado As String, Optional xAmbiente As String)
 
-   SetAmbiente xAmbiente
-   SetCertificado xCertificado
-   SetProjeto WS_PROJETO_NFE
-   Setuf UFSigla(Mid(xChave, 1, 2))
+   Setup UFSigla(Mid(xChave, 1, 2)), xCertificado, xAmbiente, WS_CTE_CONSULTAPROTOCOLO
 
-   SetSoapURL WS_NFE_CONSULTAPROTOCOLO
-   If cUF = "BA" Then
-      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta"
-      SetSoapAction "nfeConsultaNF"
-   ElseIf InStr("AC,AL,AP,DF,ES,PB,RJ,RN,RO,RR,SC,SE,TO", cUF) <> 0 Then
-      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
-      SetSoapAction "nfeConsultaNF2"
-   Else
-      SetSoapService "http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2"
-      SetSoapAction "NfeConsulta2"
-   End If
-   
-   cXmlEnvio = "<consSitNFe versao='" & cVersao & "' xmlns='http://www.portalfiscal.inf.br/nfe'>" & _
+   cXmlEnvio = "<consSitNFe versao=" & Quoted2(cVersao) & " xmlns=" & Quoted2("http://www.portalfiscal.inf.br/nfe") & ">" & _
      XmlTag("tpAmb", cAmbiente) & _
      XmlTag("xServ", "CONSULTAR") & _
      XmlTag("chNFe", xChave) & _
@@ -330,7 +239,6 @@ Function MicrosoftXmlSoapPost()
 End Function
 
 
-
 Function XmlTag(cTag As String, cValue As String)
 
    XmlTag = "<" & cTag & ">" & cValue & "</" & cTag & ">"
@@ -363,6 +271,21 @@ Function UFSigla(cUF As String)
    End If
 
 End Function
+
+
+Function Setup(xUF As String, xCertificado As String, xAmbiente As String, nWsServico As Integer)
+
+   If Not IsMissing(xUF) Then cUF = xUF
+   If Not IsMissing(xCertificado) Then cCertificado = xCertificado
+   If Not IsMissing(xAmbiente) Then cAmbiente = xAmbiente
+
+   If nWsServico = WS_CTE_CONSULTAPROTOCOLO Then
+      cProjeto = WS_PROJETO_CTE
+      cSoapAction = "cteConsultaCT"
+      cSoapService = "http://www.portalfiscal.inf.br/cte/wsdl/CteConsulta"
+   End If
+   SetSoapURL nWsServico
+   End Function
 
 Function SetSoapURL(nWsServico As Integer)
 
@@ -424,4 +347,8 @@ End Function
 
 Function CTEGeraAutorizado(cXmlDocumento, cXmlProtocolo)
 
+End Function
+
+Function Quoted2(ByVal cTexto As String) As String
+   Quoted2 = Chr(34) & cTexto & Chr(34)
 End Function
